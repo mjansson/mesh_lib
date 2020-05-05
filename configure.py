@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join('build', 'ninja'))
 
 import generator
 
-dependlibs = ['foundation']
+dependlibs = ['vector', 'foundation']
 
 generator = generator.Generator(project = 'mesh', dependlibs = dependlibs, variables = [('bundleidentifier', 'com.maniccoder.mesh.$(binname)')])
 target = generator.target

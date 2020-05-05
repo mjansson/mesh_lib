@@ -19,6 +19,7 @@
 
 #include <foundation/platform.h>
 #include <foundation/types.h>
+#include <vector/types.h>
 
 #include <mesh/build.h>
 
@@ -40,7 +41,25 @@
 #endif
 #endif
 
+#if FOUNDATION_COMPILER_MSVC
+#pragma warning(push)
+#pragma warning(disable : 4201)
+#endif
+
 typedef struct mesh_config_t mesh_config_t;
+
+typedef union mesh_vector_t mesh_vector_t;
+
+typedef mesh_vector_t mesh_coordinate_t;
+typedef mesh_vector_t mesh_normal_t;
+typedef mesh_vector_t mesh_tangent_t;
+typedef mesh_vector_t mesh_bitangent_t;
+typedef mesh_vector_t mesh_color_t;
+typedef struct mesh_uv_t mesh_uv_t;
+typedef struct mesh_vertex_t mesh_vertex_t;
+typedef struct mesh_triangle_t mesh_triangle_t;
+
+typedef struct mesh_t mesh_t;
 
 #define MESH_INVALID_VERTEX ((unsigned int)-1)
 
@@ -48,16 +67,12 @@ struct mesh_config_t {
 	size_t _unused;
 };
 
-struct mesh_coordinate_t {
-	real x;
-	real y;
-	real z;
-};
-
-struct mesh_normal_t {
-	real nx;
-	real ny;
-	real nz;
+union mesh_vector_t {
+	struct {
+		float x, y, z, w;
+	};
+	float arr[4];
+	vector_t v;
 };
 
 struct mesh_uv_t {
@@ -65,22 +80,19 @@ struct mesh_uv_t {
 	real v;
 };
 
-struct mesh_color_t {
-	real r;
-	real g;
-	real b;
-	real a;
-};
-
 struct mesh_vertex_t {
 	//! Coordinate index
 	unsigned int coordinate;
 	//! Normal index
 	unsigned int normal;
-	//! UV index for each uv layer
-	unsigned int uv[8];
-	//! Color index for each color layer
-	unsigned int color[2];
+	//! UV index
+	unsigned int uv[2];
+	//! Tangent index
+	unsigned int tangent;
+	//! Binormal index
+	unsigned int binormal;
+	//! Color index
+	unsigned int color;
 	//! Index of next vertex sharing the same coordinate index forming a linked ring list,
 	//! or MESH_INVALID_VERTEX if none
 	unsigned int adjacent;
@@ -90,6 +102,8 @@ struct mesh_triangle_t {
 	//! Index of the three corner vertex
 	unsigned int vertex[3];
 	//! Index of the three adjacent triangles along the corresponding edge from vertex n -> n+1
+	// An adjacent triangle shares both vertex coordinates and is winded the opposite direction along the edge,
+	// such that the adjacent triangle edge goes from vertex n+1 -> n
 	unsigned int adjacent[3];
 	//! Index of original face in the case of higher order polygon triangulation
 	unsigned int face;
@@ -97,7 +111,33 @@ struct mesh_triangle_t {
 
 struct mesh_face_t {
 	//! Number of corners
-	unsigned int corner_count;
+	unsigned int vertex_count;
 	//! Index of corner vertex
 	unsigned int vertex[FOUNDATION_FLEXIBLE_ARRAY];
 };
+
+struct mesh_topology_t {
+	//! Coordinate valence
+	unsigned int* coordinate_valence;
+};
+
+struct mesh_t {
+	//! Coordinate array
+	mesh_coordinate_t* coordinate;
+	//! Normal array
+	mesh_normal_t* normal;
+	//! UV coordinate array
+	mesh_uv_t* uv;
+	//! Tangent array
+	mesh_tangent_t* tangent;
+	//! Bitangent array
+	mesh_bitangent_t* bitangent;
+	//! Vertex array
+	mesh_vertex_t* vertex;
+	//! Triangle array
+	mesh_triangle_t* triangle;
+};
+
+#if FOUNDATION_COMPILER_MSVC
+#pragma warning(pop)
+#endif
