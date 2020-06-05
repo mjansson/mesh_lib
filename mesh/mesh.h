@@ -47,3 +47,72 @@ mesh_module_version(void);
 MESH_API void
 mesh_module_parse_config(const char* path, size_t path_size, const char* buffer, size_t size,
                          const struct json_token_t* tokens, size_t tokens_count);
+
+MESH_API mesh_t*
+mesh_allocate(size_t expected_vertex_count, size_t expected_triangle_count);
+
+MESH_API void
+mesh_initialize(mesh_t* mesh, size_t expected_vertex_count, size_t expected_triangle_count);
+
+MESH_API void
+mesh_finalize(mesh_t* mesh);
+
+MESH_API void
+mesh_deallocate(mesh_t* mesh);
+
+MESH_API void
+mesh_set_coordinate_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_reserve_coordinate_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_set_normal_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_reserve_normal_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_set_vertex_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_reserve_vertex_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_set_triangle_count(mesh_t* mesh, size_t count);
+
+MESH_API void
+mesh_reserve_triangle_count(mesh_t* mesh, size_t count);
+
+//! Merge coordinates that has same value
+MESH_API void
+mesh_merge_coordinate(mesh_t* mesh, real merge_coordinate_distance);
+
+// Merge vertices with attributes that has same value. For best result
+// merge coordinates first using mesh_merge_coordinate to maximize
+// vertex mergine
+MESH_API void
+mesh_merge_vertex(mesh_t* mesh);
+
+// Compact attributes by removing unused attributes and
+// remapping indices
+MESH_API void
+mesh_compact(mesh_t* mesh);
+
+MESH_API void
+mesh_calculate_normals(mesh_t* mesh);
+
+MESH_API void
+mesh_calculate_tangents(mesh_t* mesh);
+
+MESH_API void
+mesh_calculate_bounds(mesh_t* mesh);
+
+MESH_API int
+mesh_valid(mesh_t* mesh);
+
+MESH_API void
+mesh_dump(mesh_t* mesh, stream_t* stream);
+
+MESH_API mesh_t*
+mesh_undump(stream_t* stream);

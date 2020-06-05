@@ -48,6 +48,8 @@
 
 typedef struct mesh_config_t mesh_config_t;
 
+typedef enum mesh_attribute_type mesh_attribute_type;
+
 typedef union mesh_vector_t mesh_vector_t;
 
 typedef mesh_vector_t mesh_coordinate_t;
@@ -58,10 +60,16 @@ typedef mesh_vector_t mesh_color_t;
 typedef struct mesh_uv_t mesh_uv_t;
 typedef struct mesh_vertex_t mesh_vertex_t;
 typedef struct mesh_triangle_t mesh_triangle_t;
-
+typedef struct mesh_vertex_triangle_t mesh_vertex_triangle_t;
+typedef struct mesh_attribute_t mesh_attribute_t;
+typedef struct mesh_partition_t mesh_partition_t;
+typedef struct mesh_topology_t mesh_topology_t;
 typedef struct mesh_t mesh_t;
 
 #define MESH_INVALID_VERTEX ((unsigned int)-1)
+#define MESH_BUCKET_SIZE 1000
+
+enum mesh_attribute_type { MESH_ATTRIBUTE_FLOAT, MESH_ATTRIBUTE_FLOAT4 };
 
 struct mesh_config_t {
 	size_t _unused;
@@ -78,6 +86,15 @@ union mesh_vector_t {
 struct mesh_uv_t {
 	real u;
 	real v;
+};
+
+struct mesh_attribute_t {
+	string_t name;
+	mesh_attribute_type type;
+	//! Attribute values (mesh_vector_t)
+	bucketarray_t values;
+	//! Index into attribute values, one per associated item, per-vertex or per-triangle (unsigned int)
+	bucketarray_t index;
 };
 
 struct mesh_vertex_t {
@@ -107,6 +124,8 @@ struct mesh_triangle_t {
 	unsigned int adjacent[3];
 	//! Index of original face in the case of higher order polygon triangulation
 	unsigned int face;
+	//! Material index
+	unsigned int material;
 };
 
 struct mesh_face_t {
@@ -116,26 +135,51 @@ struct mesh_face_t {
 	unsigned int vertex[FOUNDATION_FLEXIBLE_ARRAY];
 };
 
+struct mesh_vertex_triangle_t {
+	//! Valence
+	unsigned int valence;
+	//! Capacity of triangle index storage
+	unsigned int capacity;
+	//! Offset into triangle index storage
+	size_t offset;
+};
+
 struct mesh_topology_t {
-	//! Coordinate valence
-	unsigned int* coordinate_valence;
+	//! Vertex to triangle map, with valence and offset in triangle index storage (mesh_vertex_triangle_t)
+	bucketarray_t vertex_triangle_map;
+	//! Vertex to triangle map storage (unsigned int)
+	bucketarray_t vertex_triangle_store;
 };
 
 struct mesh_t {
-	//! Coordinate array
-	mesh_coordinate_t* coordinate;
-	//! Normal array
-	mesh_normal_t* normal;
-	//! UV coordinate array
-	mesh_uv_t* uv;
-	//! Tangent array
-	mesh_tangent_t* tangent;
-	//! Bitangent array
-	mesh_bitangent_t* bitangent;
-	//! Vertex array
-	mesh_vertex_t* vertex;
-	//! Triangle array
-	mesh_triangle_t* triangle;
+	//! Coordinate bucket array (mesh_coordinate_t)
+	bucketarray_t coordinate;
+	//! Normal bucket array (mesh_normal_t)
+	bucketarray_t normal;
+	//! UV coordinate bucket array (mesh_uv_t)
+	bucketarray_t uv[2];
+	//! Tangent bucket array (mesh_tangent_t)
+	bucketarray_t tangent;
+	//! Bitangent bucket array (mesh_bitangent_t)
+	bucketarray_t bitangent;
+	//! Coordinate to vertex map (unsigned int)
+	bucketarray_t coordinate_to_vertex;
+	//! Attributes per vertex (attribute count equals vertex count)
+	mesh_attribute_t* attribute_vertex;
+	//! Attributes per triangle (attribute count equals triangle count)
+	mesh_attribute_t* attribute_triangle;
+	//! Vertex bucket array (mesh_vertex_t)
+	bucketarray_t vertex;
+	//! Triangle bucket array (mesh_triangle_t)
+	bucketarray_t triangle;
+	//! Bounding box minimum
+	vector_t bounds_min;
+	//! Bounding box maximum
+	vector_t bounds_max;
+	//! Partitioning of the mesh
+	mesh_partition_t* partition;
+	//! Topology of the mesh
+	mesh_topology_t* topology;
 };
 
 #if FOUNDATION_COMPILER_MSVC
