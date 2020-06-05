@@ -50,8 +50,7 @@ typedef struct mesh_config_t mesh_config_t;
 
 typedef enum mesh_attribute_type mesh_attribute_type;
 
-typedef union mesh_vector_t mesh_vector_t;
-
+typedef vector_t mesh_vector_t;
 typedef mesh_vector_t mesh_coordinate_t;
 typedef mesh_vector_t mesh_normal_t;
 typedef mesh_vector_t mesh_tangent_t;
@@ -63,11 +62,17 @@ typedef struct mesh_triangle_t mesh_triangle_t;
 typedef struct mesh_vertex_triangle_t mesh_vertex_triangle_t;
 typedef struct mesh_attribute_t mesh_attribute_t;
 typedef struct mesh_partition_t mesh_partition_t;
+typedef struct mesh_partition_element_t mesh_partition_element_t;
+typedef struct mesh_partition_node_t mesh_partition_node_t;
+typedef struct mesh_partition_leaf_t mesh_partition_leaf_t;
+typedef struct mesh_partition_lookup_t mesh_partition_lookup_t;
 typedef struct mesh_topology_t mesh_topology_t;
 typedef struct mesh_t mesh_t;
 
-#define MESH_INVALID_VERTEX ((unsigned int)-1)
-#define MESH_BUCKET_SIZE 1000
+#define MESH_INVALID_INDEX ((unsigned int)-1)
+
+#define MESH_PARTITION_NODE_MAX_ITEMS 16
+#define MESH_PARTITION_FLAG_LEAF 1
 
 enum mesh_attribute_type { MESH_ATTRIBUTE_FLOAT, MESH_ATTRIBUTE_FLOAT4 };
 
@@ -75,18 +80,13 @@ struct mesh_config_t {
 	size_t _unused;
 };
 
-union mesh_vector_t {
-	struct {
-		float x, y, z, w;
-	};
-	float arr[4];
-	vector_t v;
-};
-
 struct mesh_uv_t {
 	real u;
 	real v;
 };
+
+FOUNDATION_STATIC_ASSERT(sizeof(mesh_coordinate_t) == 16, "Invalid coordinate size");
+FOUNDATION_STATIC_ASSERT(sizeof(mesh_uv_t) == 8, "Invalid uv size");
 
 struct mesh_attribute_t {
 	string_t name;
@@ -151,6 +151,44 @@ struct mesh_topology_t {
 	bucketarray_t vertex_triangle_store;
 };
 
+struct mesh_partition_node_t {
+	//! Split point
+	vector_t split;
+	//! Child nodes
+	unsigned int child[8];
+};
+
+struct mesh_partition_leaf_t {
+	//! Min point
+	vector_t min;
+	//! Max point
+	vector_t max;
+	//! Coordinate index
+	unsigned int coordinate[MESH_PARTITION_NODE_MAX_ITEMS];
+};
+
+struct mesh_partition_element_t {
+	unsigned int flags;
+	union {
+		mesh_partition_node_t node;
+		mesh_partition_leaf_t leaf;
+	} data;
+};
+
+struct mesh_partition_t {
+	//! Node/leaf storage (mesh_partition_element_t)
+	bucketarray_t element;
+	//! Root node
+	mesh_partition_element_t root;
+	//! Coordinate to vertex map (unsigned int)
+	bucketarray_t coordinate_to_vertex;
+};
+
+struct mesh_partition_lookup_t {
+	//! Coordinate index
+	unsigned int coordinate;
+};
+
 struct mesh_t {
 	//! Coordinate bucket array (mesh_coordinate_t)
 	bucketarray_t coordinate;
@@ -162,8 +200,6 @@ struct mesh_t {
 	bucketarray_t tangent;
 	//! Bitangent bucket array (mesh_bitangent_t)
 	bucketarray_t bitangent;
-	//! Coordinate to vertex map (unsigned int)
-	bucketarray_t coordinate_to_vertex;
 	//! Attributes per vertex (attribute count equals vertex count)
 	mesh_attribute_t* attribute_vertex;
 	//! Attributes per triangle (attribute count equals triangle count)
