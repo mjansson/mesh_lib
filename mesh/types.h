@@ -200,6 +200,8 @@ struct mesh_t {
 	bucketarray_t tangent;
 	//! Bitangent bucket array (mesh_bitangent_t)
 	bucketarray_t bitangent;
+	//! Color bucket array (mesh_color_t)
+	bucketarray_t color;
 	//! Attributes per vertex (attribute count equals vertex count)
 	mesh_attribute_t* attribute_vertex;
 	//! Attributes per triangle (attribute count equals triangle count)
@@ -216,6 +218,8 @@ struct mesh_t {
 	mesh_partition_t* partition;
 	//! Topology of the mesh
 	mesh_topology_t* topology;
+	//! Next LOD
+	mesh_t* next_lod;
 };
 
 #if FOUNDATION_COMPILER_MSVC

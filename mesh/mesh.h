@@ -60,6 +60,9 @@ mesh_finalize(mesh_t* mesh);
 MESH_API void
 mesh_deallocate(mesh_t* mesh);
 
+MESH_API mesh_t*
+mesh_clone(mesh_t* mesh);
+
 MESH_API void
 mesh_set_coordinate_count(mesh_t* mesh, size_t count);
 
@@ -108,8 +111,17 @@ mesh_calculate_tangents(mesh_t* mesh);
 MESH_API void
 mesh_calculate_bounds(mesh_t* mesh);
 
+MESH_API void
+mesh_calculate_topology(mesh_t* mesh);
+
 MESH_API int
 mesh_valid(mesh_t* mesh);
+
+MESH_API bool
+mesh_triangle_is_degenerate(mesh_t* mesh, mesh_triangle_t* triangle);
+
+MESH_API vector_t
+mesh_triangle_normal(mesh_t* mesh, mesh_triangle_t* triangle);
 
 MESH_API void
 mesh_dump(mesh_t* mesh, stream_t* stream);
