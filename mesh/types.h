@@ -70,7 +70,8 @@ typedef struct mesh_t mesh_t;
 #define MESH_INVALID_INDEX ((unsigned int)-1)
 
 #define MESH_PARTITION_NODE_MAX_ITEMS 16
-#define MESH_PARTITION_FLAG_LEAF 1
+
+typedef enum mesh_partition_flag { MESH_PARTITION_FLAG_LEAF = 1 } mesh_partition_flag;
 
 typedef enum mesh_attribute_type { MESH_ATTRIBUTE_FLOAT, MESH_ATTRIBUTE_FLOAT4 } mesh_attribute_type;
 

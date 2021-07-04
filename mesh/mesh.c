@@ -254,7 +254,7 @@ mesh_calculate_normals(mesh_t* mesh) {
 	for (size_t inormal = 0; inormal < mesh->normal.count; ++inormal) {
 		mesh_normal_t* normal = bucketarray_get(&mesh->normal, inormal);
 		vector_t sqrlen = vector_length_sqr(*normal);
-		if (vector_x(sqrlen) > 0.0001)
+		if (vector_x(sqrlen) > REAL_C(0.0001))
 			*normal = vector_normalize(*normal);
 		else
 			*normal = vector(0, 1, 0, 0);
@@ -322,7 +322,7 @@ mesh_partition_insert(mesh_t* mesh, mesh_partition_t* partition, mesh_partition_
 			unsigned int leaf_coordinate[MESH_PARTITION_NODE_MAX_ITEMS];
 			memcpy(leaf_coordinate, leaf->coordinate, sizeof(leaf_coordinate));
 
-			element->flags &= ~MESH_PARTITION_FLAG_LEAF;
+			element->flags &= ~(uint)MESH_PARTITION_FLAG_LEAF;
 			mesh_partition_node_t* node = &element->data.node;
 			node->split = split;
 			memcpy(node->child, child, sizeof(node->child));
