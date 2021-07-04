@@ -48,8 +48,6 @@
 
 typedef struct mesh_config_t mesh_config_t;
 
-typedef enum mesh_attribute_type mesh_attribute_type;
-
 typedef vector_t mesh_vector_t;
 typedef mesh_vector_t mesh_coordinate_t;
 typedef mesh_vector_t mesh_normal_t;
@@ -74,10 +72,10 @@ typedef struct mesh_t mesh_t;
 #define MESH_PARTITION_NODE_MAX_ITEMS 16
 #define MESH_PARTITION_FLAG_LEAF 1
 
-enum mesh_attribute_type { MESH_ATTRIBUTE_FLOAT, MESH_ATTRIBUTE_FLOAT4 };
+typedef enum mesh_attribute_type { MESH_ATTRIBUTE_FLOAT, MESH_ATTRIBUTE_FLOAT4 } mesh_attribute_type;
 
 struct mesh_config_t {
-	size_t _unused;
+	size_t unused;
 };
 
 struct mesh_uv_t {
