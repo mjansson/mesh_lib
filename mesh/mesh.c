@@ -1249,3 +1249,27 @@ mesh_triangle_normal(mesh_t* mesh, mesh_triangle_t* triangle) {
 	vector_t edge1 = vector_sub(*coordinate[2], *coordinate[0]);
 	return vector_normalize(vector_cross3(edge0, edge1));
 }
+
+void
+mesh_merge_mesh(mesh_t* mesh, mesh_t* additional) {
+	// TODO: Merge attributes
+	size_t coordinate_offset = mesh->coordinate.count;
+	bucketarray_append(&mesh->coordinate, &additional->coordinate);
+
+	size_t vertex_offset = mesh->vertex.count;
+	bucketarray_append(&mesh->vertex, &additional->vertex);
+	for (size_t ivert = vertex_offset; ivert < mesh->vertex.count; ++ivert)
+		bucketarray_get_as(mesh_vertex_t, &mesh->vertex, ivert)->coordinate += (uint)coordinate_offset;
+
+	size_t triangle_offset = mesh->triangle.count;
+	bucketarray_append(&mesh->triangle, &additional->triangle);
+	for (size_t itri = triangle_offset; itri < mesh->triangle.count; ++itri) {
+		mesh_triangle_t* triangle = bucketarray_get_as(mesh_triangle_t, &mesh->triangle, itri);
+		triangle->vertex[0] += (uint)vertex_offset;
+		triangle->vertex[1] += (uint)vertex_offset;
+		triangle->vertex[2] += (uint)vertex_offset;
+	}
+
+	mesh->bounds_max = vector_max(mesh->bounds_max, additional->bounds_max);
+	mesh->bounds_min = vector_min(mesh->bounds_min, additional->bounds_min);
+}

@@ -64,6 +64,9 @@ MESH_API mesh_t*
 mesh_clone(mesh_t* mesh);
 
 MESH_API void
+mesh_merge_mesh(mesh_t* mesh, mesh_t* additional);
+
+MESH_API void
 mesh_set_coordinate_count(mesh_t* mesh, size_t count);
 
 MESH_API void
