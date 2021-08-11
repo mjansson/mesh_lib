@@ -1252,6 +1252,9 @@ mesh_triangle_normal(mesh_t* mesh, mesh_triangle_t* triangle) {
 
 void
 mesh_merge_mesh(mesh_t* mesh, mesh_t* additional) {
+	if (!mesh || !additional)
+		return;
+
 	// TODO: Merge attributes
 	size_t coordinate_offset = mesh->coordinate.count;
 	bucketarray_append(&mesh->coordinate, &additional->coordinate);
