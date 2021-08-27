@@ -1276,3 +1276,37 @@ mesh_merge_mesh(mesh_t* mesh, mesh_t* additional) {
 	mesh->bounds_max = vector_max(mesh->bounds_max, additional->bounds_max);
 	mesh->bounds_min = vector_min(mesh->bounds_min, additional->bounds_min);
 }
+
+void
+mesh_merge_transformed_mesh(mesh_t* mesh, mesh_t* additional, matrix_t transform) {
+	if (!mesh || !additional)
+		return;
+
+	vector_t additional_bounds_min = vector(REAL_MAX, REAL_MAX, REAL_MAX, REAL_MAX);
+	vector_t additional_bounds_max = vector(-REAL_MAX, -REAL_MAX, -REAL_MAX, -REAL_MAX);
+
+	// TODO: Merge attributes
+	size_t coordinate_offset = mesh->coordinate.count;
+	for (size_t icoord = 0; icoord < additional->coordinate.count; ++icoord) {
+		vector_t coordinate = *bucketarray_get_as(vector_t, &additional->coordinate, icoord);
+		coordinate = vector_transform(coordinate, transform);
+		bucketarray_push(&mesh->coordinate, &coordinate);
+	}
+
+	size_t vertex_offset = mesh->vertex.count;
+	bucketarray_append(&mesh->vertex, &additional->vertex);
+	for (size_t ivert = vertex_offset; ivert < mesh->vertex.count; ++ivert)
+		bucketarray_get_as(mesh_vertex_t, &mesh->vertex, ivert)->coordinate += (uint)coordinate_offset;
+
+	size_t triangle_offset = mesh->triangle.count;
+	bucketarray_append(&mesh->triangle, &additional->triangle);
+	for (size_t itri = triangle_offset; itri < mesh->triangle.count; ++itri) {
+		mesh_triangle_t* triangle = bucketarray_get_as(mesh_triangle_t, &mesh->triangle, itri);
+		triangle->vertex[0] += (uint)vertex_offset;
+		triangle->vertex[1] += (uint)vertex_offset;
+		triangle->vertex[2] += (uint)vertex_offset;
+	}
+
+	mesh->bounds_max = vector_max(mesh->bounds_max, additional_bounds_max);
+	mesh->bounds_min = vector_min(mesh->bounds_min, additional_bounds_min);
+}
