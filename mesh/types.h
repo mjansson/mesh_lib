@@ -88,7 +88,9 @@ FOUNDATION_STATIC_ASSERT(sizeof(mesh_coordinate_t) == 16, "Invalid coordinate si
 FOUNDATION_STATIC_ASSERT(sizeof(mesh_uv_t) == 8, "Invalid uv size");
 
 struct mesh_attribute_t {
+	//! Attribute name
 	string_t name;
+	//! Attribute type
 	mesh_attribute_type type;
 	//! Attribute values (mesh_vector_t)
 	bucketarray_t values;
@@ -105,8 +107,8 @@ struct mesh_vertex_t {
 	unsigned int uv[2];
 	//! Tangent index
 	unsigned int tangent;
-	//! Binormal index
-	unsigned int binormal;
+	//! Bitangent index
+	unsigned int bitangent;
 	//! Color index
 	unsigned int color;
 	//! Index of next vertex sharing the same coordinate index forming a linked ring list,

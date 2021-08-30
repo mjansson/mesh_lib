@@ -1255,14 +1255,48 @@ mesh_merge_mesh(mesh_t* mesh, mesh_t* additional) {
 	if (!mesh || !additional)
 		return;
 
-	// TODO: Merge attributes
+	// TODO: Merge all attributes
 	size_t coordinate_offset = mesh->coordinate.count;
 	bucketarray_append(&mesh->coordinate, &additional->coordinate);
 
+	bool additional_normals = (additional->normal.count > 0);
+	size_t normal_offset = mesh->normal.count;
+	if (additional_normals)
+		bucketarray_append(&mesh->normal, &additional->normal);
+
+	bool additional_tangents = (additional->tangent.count > 0);
+	size_t tangent_offset = mesh->tangent.count;
+	if (additional_tangents)
+		bucketarray_append(&mesh->tangent, &additional->tangent);
+
+	bool additional_bitangents = (additional->bitangent.count > 0);
+	size_t bitangent_offset = mesh->bitangent.count;
+	if (additional_bitangents)
+		bucketarray_append(&mesh->bitangent, &additional->bitangent);
+
+	bool additional_uvs[2] = {additional->uv[0].count > 0, additional->uv[1].count > 0};
+	size_t uv_offset[2] = {mesh->uv[0].count, mesh->uv[1].count};
+	if (additional_uvs[0])
+		bucketarray_append(&mesh->uv[0], &additional->uv[0]);
+	if (additional_uvs[1])
+		bucketarray_append(&mesh->uv[1], &additional->uv[1]);
+
 	size_t vertex_offset = mesh->vertex.count;
 	bucketarray_append(&mesh->vertex, &additional->vertex);
-	for (size_t ivert = vertex_offset; ivert < mesh->vertex.count; ++ivert)
-		bucketarray_get_as(mesh_vertex_t, &mesh->vertex, ivert)->coordinate += (uint)coordinate_offset;
+	for (size_t ivert = vertex_offset; ivert < mesh->vertex.count; ++ivert) {
+		mesh_vertex_t* vertex = bucketarray_get_as(mesh_vertex_t, &mesh->vertex, ivert);
+		vertex->coordinate += (uint)coordinate_offset;
+		if (additional_normals)
+			vertex->normal += (uint)normal_offset;
+		if (additional_tangents)
+			vertex->tangent += (uint)tangent_offset;
+		if (additional_bitangents)
+			vertex->bitangent += (uint)bitangent_offset;
+		if (additional_uvs[0])
+			vertex->uv[0] += (uint)uv_offset[0];
+		if (additional_uvs[0])
+			vertex->uv[1] += (uint)uv_offset[1];
+	}
 
 	size_t triangle_offset = mesh->triangle.count;
 	bucketarray_append(&mesh->triangle, &additional->triangle);
