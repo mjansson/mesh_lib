@@ -191,6 +191,10 @@ struct mesh_partition_lookup_t {
 };
 
 struct mesh_t {
+	//! ID
+	uuid_t id;
+	//! Name
+	string_t name;
 	//! Coordinate bucket array (mesh_coordinate_t)
 	bucketarray_t coordinate;
 	//! Normal bucket array (mesh_normal_t)

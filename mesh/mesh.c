@@ -21,6 +21,7 @@
 #include <foundation/log.h>
 #include <foundation/stream.h>
 #include <foundation/time.h>
+#include <foundation/uuid.h>
 #include <vector/vector.h>
 
 static mesh_config_t _mesh_config;
@@ -74,6 +75,8 @@ mesh_initialize(mesh_t* mesh, size_t expected_vertex_count, size_t expected_tria
 	mesh->partition = nullptr;
 	mesh->topology = nullptr;
 	mesh->next_lod = 0;
+	mesh->id = uuid_null();
+	mesh->name = string(0, 0);
 }
 
 void
@@ -102,6 +105,7 @@ mesh_finalize(mesh_t* mesh) {
 			bucketarray_finalize(&mesh->topology->vertex_triangle_store);
 		}
 		memory_deallocate(mesh->topology);
+		string_deallocate(mesh->name.str);
 		mesh_t* last_mesh = mesh;
 		mesh = mesh->next_lod;
 		if (last_mesh != first_mesh)
