@@ -60,6 +60,9 @@ mesh_finalize(mesh_t* mesh);
 MESH_API void
 mesh_deallocate(mesh_t* mesh);
 
+MESH_API void
+mesh_clear(mesh_t* mesh);
+
 MESH_API mesh_t*
 mesh_clone(mesh_t* mesh);
 

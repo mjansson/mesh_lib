@@ -77,40 +77,37 @@ mesh_initialize(mesh_t* mesh, size_t expected_vertex_count, size_t expected_tria
 	mesh->next_lod = 0;
 	mesh->id = uuid_null();
 	mesh->name = string(0, 0);
+	mesh->bounds_min = vector(0, 0, 0, 1);
+	mesh->bounds_max = vector(0, 0, 0, 1);
 }
 
 void
 mesh_finalize(mesh_t* mesh) {
-	mesh_t* first_mesh = mesh;
-	while (mesh) {
-		bucketarray_finalize(&mesh->coordinate);
-		bucketarray_finalize(&mesh->vertex);
-		bucketarray_finalize(&mesh->normal);
-		bucketarray_finalize(&mesh->uv[0]);
-		bucketarray_finalize(&mesh->uv[1]);
-		bucketarray_finalize(&mesh->tangent);
-		bucketarray_finalize(&mesh->bitangent);
-		bucketarray_finalize(&mesh->color);
-		bucketarray_finalize(&mesh->triangle);
-		// TODO: free attributes
-		// free mesh->attribute_vertex;
-		// free mesh->attribute_triangle;
-		if (mesh->partition) {
-			bucketarray_finalize(&mesh->partition->coordinate_to_vertex);
-			bucketarray_finalize(&mesh->partition->element);
-		}
-		memory_deallocate(mesh->partition);
-		if (mesh->topology) {
-			bucketarray_finalize(&mesh->topology->vertex_triangle_map);
-			bucketarray_finalize(&mesh->topology->vertex_triangle_store);
-		}
-		memory_deallocate(mesh->topology);
-		string_deallocate(mesh->name.str);
-		mesh_t* last_mesh = mesh;
-		mesh = mesh->next_lod;
-		if (last_mesh != first_mesh)
-			memory_deallocate(last_mesh);
+	bucketarray_finalize(&mesh->coordinate);
+	bucketarray_finalize(&mesh->vertex);
+	bucketarray_finalize(&mesh->normal);
+	bucketarray_finalize(&mesh->uv[0]);
+	bucketarray_finalize(&mesh->uv[1]);
+	bucketarray_finalize(&mesh->tangent);
+	bucketarray_finalize(&mesh->bitangent);
+	bucketarray_finalize(&mesh->color);
+	bucketarray_finalize(&mesh->triangle);
+	// TODO: free attributes
+	// free mesh->attribute_vertex;
+	// free mesh->attribute_triangle;
+	if (mesh->partition) {
+		bucketarray_finalize(&mesh->partition->coordinate_to_vertex);
+		bucketarray_finalize(&mesh->partition->element);
 	}
+	memory_deallocate(mesh->partition);
+	if (mesh->topology) {
+		bucketarray_finalize(&mesh->topology->vertex_triangle_map);
+		bucketarray_finalize(&mesh->topology->vertex_triangle_store);
+	}
+	memory_deallocate(mesh->topology);
+	string_deallocate(mesh->name.str);
+	if (mesh->next_lod)
+		mesh_deallocate(mesh->next_lod);
 }
 
 void
@@ -118,6 +115,37 @@ mesh_deallocate(mesh_t* mesh) {
 	if (mesh)
 		mesh_finalize(mesh);
 	memory_deallocate(mesh);
+}
+
+void
+mesh_clear(mesh_t* mesh) {
+	bucketarray_clear_and_free(&mesh->coordinate);
+	bucketarray_clear_and_free(&mesh->vertex);
+	bucketarray_clear_and_free(&mesh->normal);
+	bucketarray_clear_and_free(&mesh->uv[0]);
+	bucketarray_clear_and_free(&mesh->uv[1]);
+	bucketarray_clear_and_free(&mesh->tangent);
+	bucketarray_clear_and_free(&mesh->bitangent);
+	bucketarray_clear_and_free(&mesh->color);
+	bucketarray_clear_and_free(&mesh->triangle);
+	// TODO: free attributes
+	// free mesh->attribute_vertex;
+	// free mesh->attribute_triangle;
+	if (mesh->partition) {
+		bucketarray_finalize(&mesh->partition->coordinate_to_vertex);
+		bucketarray_finalize(&mesh->partition->element);
+	}
+	memory_deallocate(mesh->partition);
+	mesh->partition = nullptr;
+	if (mesh->topology) {
+		bucketarray_finalize(&mesh->topology->vertex_triangle_map);
+		bucketarray_finalize(&mesh->topology->vertex_triangle_store);
+	}
+	memory_deallocate(mesh->topology);
+	mesh->topology = nullptr;
+	if (mesh->next_lod)
+		mesh_deallocate(mesh->next_lod);
+	mesh->next_lod = nullptr;
 }
 
 mesh_t*
