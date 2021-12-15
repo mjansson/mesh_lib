@@ -24,11 +24,11 @@
 #include <foundation/uuid.h>
 #include <vector/vector.h>
 
-static mesh_config_t _mesh_config;
+static mesh_config_t mesh_config;
 
 int
 mesh_module_initialize(mesh_config_t config) {
-	_mesh_config = config;
+	mesh_config = config;
 	return 0;
 }
 
