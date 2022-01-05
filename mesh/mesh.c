@@ -300,7 +300,7 @@ mesh_calculate_tangents(mesh_t* mesh) {
 
 static void
 mesh_partition_insert(mesh_t* mesh, mesh_partition_t* partition, mesh_partition_element_t* element,
-                      mesh_coordinate_t coordinate, unsigned int coordinate_index) {
+                      mesh_coordinate_t coordinate, uint coordinate_index) {
 	if (element->flags & MESH_PARTITION_FLAG_LEAF) {
 		int iidx = 0;
 		mesh_partition_leaf_t* leaf = &element->data.leaf;
@@ -314,12 +314,12 @@ mesh_partition_insert(mesh_t* mesh, mesh_partition_t* partition, mesh_partition_
 			leaf->coordinate[iidx] = coordinate_index;
 		} else {
 			// Leaf is full, split
-			unsigned int child[8];
+			uint child[8];
 			vector_t split = vector_add(leaf->min, vector_scale(vector_sub(leaf->max, leaf->min), 0.5f));
 			for (int ichild = 0; ichild < 8; ++ichild) {
 				size_t element_count = partition->element.count;
 				bucketarray_resize(&partition->element, element_count + 1);
-				child[ichild] = (unsigned int)element_count;
+				child[ichild] = (uint)element_count;
 				mesh_partition_element_t* child_element = bucketarray_get(&partition->element, element_count);
 				child_element->flags = MESH_PARTITION_FLAG_LEAF;
 				mesh_partition_leaf_t* child_leaf = &child_element->data.leaf;
@@ -351,7 +351,7 @@ mesh_partition_insert(mesh_t* mesh, mesh_partition_t* partition, mesh_partition_
 				child_leaf->max = vector(max_x, max_y, max_z, REAL_C(1.0));
 			}
 
-			unsigned int leaf_coordinate[MESH_PARTITION_NODE_MAX_ITEMS];
+			uint leaf_coordinate[MESH_PARTITION_NODE_MAX_ITEMS];
 			memcpy(leaf_coordinate, leaf->coordinate, sizeof(leaf_coordinate));
 
 			element->flags &= ~(uint)MESH_PARTITION_FLAG_LEAF;
@@ -360,7 +360,7 @@ mesh_partition_insert(mesh_t* mesh, mesh_partition_t* partition, mesh_partition_
 			memcpy(node->child, child, sizeof(node->child));
 
 			for (iidx = 0; iidx < MESH_PARTITION_NODE_MAX_ITEMS; ++iidx) {
-				unsigned int prev_coordinate_index = leaf_coordinate[iidx];
+				uint prev_coordinate_index = leaf_coordinate[iidx];
 				mesh_coordinate_t* prev_coordinate = bucketarray_get(&mesh->coordinate, prev_coordinate_index);
 				mesh_partition_insert(mesh, partition, element, *prev_coordinate, prev_coordinate_index);
 			}
@@ -378,13 +378,13 @@ mesh_partition_insert(mesh_t* mesh, mesh_partition_t* partition, mesh_partition_
 static void
 mesh_validate_vertex_adjancency(mesh_t* mesh) {
 	// Verify that all vertex rings are valid
-	unsigned int* ring = nullptr;
+	uint* ring = nullptr;
 	bool fail = false;
-	for (unsigned int ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
+	for (uint ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
 		mesh_vertex_t* vertex = bucketarray_get(&mesh->vertex, ivertex);
 		array_clear(ring);
 		while (!fail && (vertex->adjacent != ivertex)) {
-			for (unsigned int iring = 0, ringcount = array_size(ring); iring < ringcount; ++iring) {
+			for (uint iring = 0, ringcount = array_size(ring); iring < ringcount; ++iring) {
 				if (ring[iring] == vertex->adjacent) {
 					FOUNDATION_ASSERT_FAIL("Invalid vertex ring");
 					fail = true;
@@ -427,16 +427,16 @@ mesh_partition(mesh_t* mesh) {
 	memset(partition->root.data.leaf.coordinate, 0xFF, sizeof(partition->root.data.leaf.coordinate));
 	// coordinate array now has MESH_INVALID_INDEX in all fields
 
-	bucketarray_initialize(&mesh->partition->coordinate_to_vertex, sizeof(unsigned int),
+	bucketarray_initialize(&mesh->partition->coordinate_to_vertex, sizeof(uint),
 	                       (size_t)1 << mesh->coordinate.bucket_shift);
 	bucketarray_resize_fill(&mesh->partition->coordinate_to_vertex, mesh->coordinate.count, 0xFF);
 	// coordinate to vertex array now has MESH_INVALID_INDEX in all fields
 
-	for (unsigned int ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
+	for (uint ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
 		mesh_vertex_t* vertex = bucketarray_get(&mesh->vertex, ivertex);
 		mesh_coordinate_t* coordinate = bucketarray_get(&mesh->coordinate, vertex->coordinate);
 
-		unsigned int* coordinate_vertex = bucketarray_get(&mesh->partition->coordinate_to_vertex, vertex->coordinate);
+		uint* coordinate_vertex = bucketarray_get(&mesh->partition->coordinate_to_vertex, vertex->coordinate);
 		if (*coordinate_vertex == MESH_INVALID_INDEX) {
 			// First time this coordinate is used, insert into partitioning and link to vertex
 			mesh_partition_insert(mesh, partition, &partition->root, *coordinate, vertex->coordinate);
@@ -460,17 +460,17 @@ static void
 mesh_validate_topology(mesh_t* mesh) {
 #if BUILD_ENABLE_ASSERT
 	// Verify the topology
-	for (unsigned int itri = 0; itri < mesh->triangle.count; ++itri) {
+	for (uint itri = 0; itri < mesh->triangle.count; ++itri) {
 		mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, itri);
-		for (unsigned int icorner = 0; icorner < 3; ++icorner) {
-			unsigned int vertex_index = triangle->vertex[icorner];
+		for (uint icorner = 0; icorner < 3; ++icorner) {
+			uint vertex_index = triangle->vertex[icorner];
 
 			int found = 0;
 			mesh_vertex_triangle_t* vertex_triangle =
 			    bucketarray_get(&mesh->topology->vertex_triangle_map, vertex_index);
 			size_t offset = vertex_triangle->offset;
-			for (unsigned int it = 0, tcount = vertex_triangle->valence; it < tcount; ++it) {
-				unsigned int* triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store, offset + it);
+			for (uint it = 0, tcount = vertex_triangle->valence; it < tcount; ++it) {
+				uint* triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store, offset + it);
 				if (*triangle_index == itri)
 					++found;
 			}
@@ -480,15 +480,15 @@ mesh_validate_topology(mesh_t* mesh) {
 			    found == 1, "Invalid vertex triangle map, triangle corner vertex map back to triangle multiple times");
 		}
 	}
-	for (unsigned int ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
+	for (uint ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
 		mesh_vertex_triangle_t* vertex_triangle = bucketarray_get(&mesh->topology->vertex_triangle_map, ivertex);
 		size_t offset = vertex_triangle->offset;
-		for (unsigned int it = 0, tcount = vertex_triangle->valence; it < tcount; ++it) {
-			unsigned int* triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store, offset + it);
+		for (uint it = 0, tcount = vertex_triangle->valence; it < tcount; ++it) {
+			uint* triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store, offset + it);
 			mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, *triangle_index);
 			bool found = false;
-			for (unsigned int icorner = 0; icorner < 3; ++icorner) {
-				unsigned int vertex_index = triangle->vertex[icorner];
+			for (uint icorner = 0; icorner < 3; ++icorner) {
+				uint vertex_index = triangle->vertex[icorner];
 				if (vertex_index == ivertex) {
 					found = true;
 					break;
@@ -496,24 +496,23 @@ mesh_validate_topology(mesh_t* mesh) {
 			}
 			FOUNDATION_ASSERT_MSG(
 			    found, "Invalid vertex triangle map, triangle list contains triangle that does not have vertex");
-			for (unsigned int itnext = it + 1; itnext < tcount; ++itnext) {
-				unsigned int* triangle_next_index =
-				    bucketarray_get(&mesh->topology->vertex_triangle_store, offset + itnext);
+			for (uint itnext = it + 1; itnext < tcount; ++itnext) {
+				uint* triangle_next_index = bucketarray_get(&mesh->topology->vertex_triangle_store, offset + itnext);
 				FOUNDATION_ASSERT_MSG(*triangle_index != *triangle_next_index,
 				                      "Invalid vertex triangle map, duplicate entries");
 			}
 		}
 	}
-	for (unsigned int itri = 0; itri < mesh->triangle.count; ++itri) {
+	for (uint itri = 0; itri < mesh->triangle.count; ++itri) {
 		mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, itri);
-		for (unsigned int iedge = 0; iedge < 3; ++iedge) {
+		for (uint iedge = 0; iedge < 3; ++iedge) {
 			if (triangle->adjacent[iedge] == MESH_INVALID_INDEX)
 				continue;
 			FOUNDATION_ASSERT_MSG(triangle->adjacent[iedge] < mesh->triangle.count,
 			                      "Invalid adjacent triangle index, out of range");
 			mesh_triangle_t* triangle_other = bucketarray_get(&mesh->triangle, triangle->adjacent[iedge]);
 			bool found = false;
-			for (unsigned int iotheredge = 0; iotheredge < 3; ++iotheredge) {
+			for (uint iotheredge = 0; iotheredge < 3; ++iotheredge) {
 				if (triangle_other->adjacent[iotheredge] == itri)
 					found = true;
 			}
@@ -543,7 +542,7 @@ mesh_topology(mesh_t* mesh) {
 
 	// First build the mapping from vertex to triangle
 	bucketarray_initialize(&topology->vertex_triangle_map, sizeof(mesh_vertex_triangle_t), mesh->vertex.count / 4);
-	bucketarray_initialize(&topology->vertex_triangle_store, sizeof(unsigned int), (mesh->triangle.count * 3) / 4);
+	bucketarray_initialize(&topology->vertex_triangle_store, sizeof(uint), (mesh->triangle.count * 3) / 4);
 
 	bucketarray_resize_fill(&topology->vertex_triangle_map, mesh->vertex.count, 0);
 
@@ -579,14 +578,14 @@ mesh_topology(mesh_t* mesh) {
 	bucketarray_resize(&topology->vertex_triangle_store, offset);
 
 	// Collect the actual triangle list for each vertex
-	for (unsigned int itri = 0; itri < mesh->triangle.count; ++itri) {
+	for (uint itri = 0; itri < mesh->triangle.count; ++itri) {
 		mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, itri);
 
 		mesh_vertex_triangle_t* vertex[3] = {bucketarray_get(&topology->vertex_triangle_map, triangle->vertex[0]),
 		                                     bucketarray_get(&topology->vertex_triangle_map, triangle->vertex[1]),
 		                                     bucketarray_get(&topology->vertex_triangle_map, triangle->vertex[2])};
 
-		unsigned int* store = bucketarray_get(&topology->vertex_triangle_store, vertex[0]->offset + vertex[0]->valence);
+		uint* store = bucketarray_get(&topology->vertex_triangle_store, vertex[0]->offset + vertex[0]->valence);
 		*store = itri;
 		++vertex[0]->valence;
 
@@ -600,23 +599,23 @@ mesh_topology(mesh_t* mesh) {
 	}
 
 	// Using the vertex to triangle mapping, collect adjacent triangles along each edge
-	for (unsigned int itri = 0; itri < mesh->triangle.count; ++itri) {
+	for (uint itri = 0; itri < mesh->triangle.count; ++itri) {
 		mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, itri);
 
-		for (unsigned int iedge = 0; iedge < 3; ++iedge) {
+		for (uint iedge = 0; iedge < 3; ++iedge) {
 			if (triangle->adjacent[iedge] != MESH_INVALID_INDEX)
 				continue;
 
 			// Triangle adjacency uses the coordinates, so get the coordinate index
 			// for the start of the edge, and loop all vertex that share this coordinate
-			unsigned int ifirstvertex = triangle->vertex[iedge];
-			unsigned int istartvertex = ifirstvertex;
+			uint ifirstvertex = triangle->vertex[iedge];
+			uint istartvertex = ifirstvertex;
 			mesh_vertex_t* vertex = bucketarray_get(&mesh->vertex, istartvertex);
-			unsigned int istartcoordinate = vertex->coordinate;
+			uint istartcoordinate = vertex->coordinate;
 
-			unsigned int inextvertex = triangle->vertex[(iedge + 1) % 3];
+			uint inextvertex = triangle->vertex[(iedge + 1) % 3];
 			mesh_vertex_t* next_vertex = bucketarray_get(&mesh->vertex, inextvertex);
-			unsigned int inextcoordinate = next_vertex->coordinate;
+			uint inextcoordinate = next_vertex->coordinate;
 
 			do {
 				// Loop the triangles containing the current vertex and check if they have
@@ -625,12 +624,13 @@ mesh_topology(mesh_t* mesh) {
 				vertex = bucketarray_get(&mesh->vertex, istartvertex);
 				FOUNDATION_ASSERT(vertex->coordinate == istartcoordinate);
 
-				unsigned int* other_triangle_index =
-				    bucketarray_get(&topology->vertex_triangle_store, vertex_triangle->offset);
-				for (unsigned int iotheridx = 0;
+				for (uint iotheridx = 0;
 				     (iotheridx < vertex_triangle->valence) && (triangle->adjacent[iedge] == MESH_INVALID_INDEX);
 				     ++iotheridx) {
-					unsigned int iothertri = other_triangle_index[iotheridx];
+					uint iothertri =
+					    *(uint*)bucketarray_get(&topology->vertex_triangle_store, vertex_triangle->offset + iotheridx);
+					FOUNDATION_ASSERT_MSG(iothertri < mesh->triangle.count,
+					                      "Invalid triangle index in vertex triangle map");
 					if (iothertri == itri)
 						continue;
 
@@ -638,18 +638,18 @@ mesh_topology(mesh_t* mesh) {
 					// the previous vertex has the same coordinate. If so, the edge runs between
 					// the same coordinates as the edge currently processing, but with reversed winding
 					mesh_triangle_t* other_triangle = bucketarray_get(&mesh->triangle, iothertri);
-					for (unsigned int iotheredge = 0; iotheredge < 3; ++iotheredge) {
-						unsigned int iothernextvertex = other_triangle->vertex[(iotheredge + 1) % 3];
+					for (uint iotheredge = 0; iotheredge < 3; ++iotheredge) {
+						uint iothernextvertex = other_triangle->vertex[(iotheredge + 1) % 3];
 						if (iothernextvertex != istartvertex)
 							continue;
 
-						unsigned int iotherstartvertex = other_triangle->vertex[iotheredge];
+						uint iotherstartvertex = other_triangle->vertex[iotheredge];
 						mesh_vertex_t* other_start_vertex = bucketarray_get(&mesh->vertex, iotherstartvertex);
 						if (other_start_vertex->coordinate != inextcoordinate)
 							continue;
 
 						if (other_triangle->adjacent[iotheredge] != MESH_INVALID_INDEX) {
-							unsigned int ithirdtri = other_triangle->adjacent[iotheredge];
+							uint ithirdtri = other_triangle->adjacent[iotheredge];
 							mesh_triangle_t* third_triangle = bucketarray_get(&mesh->triangle, ithirdtri);
 
 							// Pick the two triangles that have most aligned normals to be adjacent
@@ -664,7 +664,7 @@ mesh_topology(mesh_t* mesh) {
 
 								// Reset adjacency of third triangle along the correct edge (winding same as original
 								// triangle)
-								unsigned int ithirdedge = 0;
+								uint ithirdedge = 0;
 								mesh_vertex_t* third_vertex[3] = {
 								    bucketarray_get(&mesh->vertex, third_triangle->vertex[0]),
 								    bucketarray_get(&mesh->vertex, third_triangle->vertex[1]),
@@ -761,15 +761,15 @@ mesh_merge_coordinate(mesh_t* mesh, real merge_coordinate_distance) {
 			continue;
 
 		mesh_partition_leaf_t* leaf = &element->data.leaf;
-		for (unsigned int ifirstidx = 0; ifirstidx < MESH_PARTITION_NODE_MAX_ITEMS; ++ifirstidx) {
-			unsigned int ifirst = leaf->coordinate[ifirstidx];
+		for (uint ifirstidx = 0; ifirstidx < MESH_PARTITION_NODE_MAX_ITEMS; ++ifirstidx) {
+			uint ifirst = leaf->coordinate[ifirstidx];
 			if (ifirst == MESH_INVALID_INDEX)
 				break;
 
 			mesh_coordinate_t* first_coordinate = bucketarray_get(&mesh->coordinate, ifirst);
 
-			for (unsigned int isecondidx = ifirstidx + 1; isecondidx < MESH_PARTITION_NODE_MAX_ITEMS;) {
-				unsigned int isecond = leaf->coordinate[isecondidx];
+			for (uint isecondidx = ifirstidx + 1; isecondidx < MESH_PARTITION_NODE_MAX_ITEMS;) {
+				uint isecond = leaf->coordinate[isecondidx];
 				if (isecond == MESH_INVALID_INDEX)
 					break;
 
@@ -780,8 +780,8 @@ mesh_merge_coordinate(mesh_t* mesh, real merge_coordinate_distance) {
 				if (vector_x(diff_sqr) < FLT_EPSILON) {
 					// Coordinates are to be merged, update all vertex referring to the merged coordinate
 					// and reset coordinate-to-vertex mapping for the merged coordinate
-					unsigned int* start_vertex = bucketarray_get(&mesh->partition->coordinate_to_vertex, isecond);
-					unsigned int ivertex = *start_vertex;
+					uint* start_vertex = bucketarray_get(&mesh->partition->coordinate_to_vertex, isecond);
+					uint ivertex = *start_vertex;
 					do {
 						mesh_vertex_t* vertex = bucketarray_get(&mesh->vertex, ivertex);
 						vertex->coordinate = ifirst;
@@ -794,12 +794,12 @@ mesh_merge_coordinate(mesh_t* mesh, real merge_coordinate_distance) {
 					mesh_vertex_t* base_vertex = bucketarray_get(&mesh->vertex, *start_vertex);
 
 					mesh_vertex_t* splice_vertex = bucketarray_get(&mesh->vertex, ivertex);
-					unsigned int inextvertex = base_vertex->adjacent;
+					uint inextvertex = base_vertex->adjacent;
 					base_vertex->adjacent = splice_vertex->adjacent;
 					splice_vertex->adjacent = inextvertex;
 
 					// Remove the coordinate from the partitioning by swap-with-last
-					unsigned int ilastidx = MESH_PARTITION_NODE_MAX_ITEMS - 1;
+					uint ilastidx = MESH_PARTITION_NODE_MAX_ITEMS - 1;
 					for (; ilastidx > isecondidx; --ilastidx) {
 						if (leaf->coordinate[ilastidx] != MESH_INVALID_INDEX)
 							break;
@@ -831,9 +831,9 @@ mesh_merge_vertex(mesh_t* mesh) {
 	tick_t start = time_current();
 
 	vector_t tolerance = vector_uniform(FLT_EPSILON);
-	for (unsigned int ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
+	for (uint ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
 		mesh_vertex_t* vertex = bucketarray_get(&mesh->vertex, ivertex);
-		unsigned int iadjacent = vertex->adjacent;
+		uint iadjacent = vertex->adjacent;
 		while (iadjacent != ivertex) {
 			mesh_vertex_t* vertex_adjacent = bucketarray_get(&mesh->vertex, iadjacent);
 
@@ -862,9 +862,9 @@ mesh_merge_vertex(mesh_t* mesh) {
 				// Merge adjacent vertex into this vertex, update triangles and topology
 				mesh_vertex_triangle_t* adjacent_vertex_triangle =
 				    bucketarray_get(&mesh->topology->vertex_triangle_map, iadjacent);
-				unsigned int* adjacent_triangle_index =
+				uint* adjacent_triangle_index =
 				    bucketarray_get(&mesh->topology->vertex_triangle_store, adjacent_vertex_triangle->offset);
-				for (unsigned int itri = 0; itri < adjacent_vertex_triangle->valence; ++itri) {
+				for (uint itri = 0; itri < adjacent_vertex_triangle->valence; ++itri) {
 					mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, adjacent_triangle_index[itri]);
 					if (triangle->vertex[0] == iadjacent)
 						triangle->vertex[0] = ivertex;
@@ -876,21 +876,20 @@ mesh_merge_vertex(mesh_t* mesh) {
 
 				mesh_vertex_triangle_t* vertex_triangle =
 				    bucketarray_get(&mesh->topology->vertex_triangle_map, ivertex);
-				unsigned int total_valence = vertex_triangle->valence + adjacent_vertex_triangle->valence;
+				uint total_valence = vertex_triangle->valence + adjacent_vertex_triangle->valence;
 				if (total_valence > vertex_triangle->capacity) {
 					size_t new_offset = mesh->topology->vertex_triangle_store.count;
 					total_valence += 2;
 					bucketarray_resize(&mesh->topology->vertex_triangle_store, new_offset + total_valence);
 					memcpy(bucketarray_get(&mesh->topology->vertex_triangle_store, new_offset),
 					       bucketarray_get(&mesh->topology->vertex_triangle_store, vertex_triangle->offset),
-					       sizeof(unsigned int) * vertex_triangle->valence);
+					       sizeof(uint) * vertex_triangle->valence);
 					vertex_triangle->offset = new_offset;
 					vertex_triangle->capacity = total_valence;
 				}
-				unsigned int* triangle_index =
-				    bucketarray_get(&mesh->topology->vertex_triangle_store, vertex_triangle->offset);
+				uint* triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store, vertex_triangle->offset);
 				memcpy(triangle_index + vertex_triangle->valence, adjacent_triangle_index,
-				       sizeof(unsigned int) * adjacent_vertex_triangle->valence);
+				       sizeof(uint) * adjacent_vertex_triangle->valence);
 				vertex_triangle->valence += adjacent_vertex_triangle->valence;
 				adjacent_vertex_triangle->valence = 0;
 			}
@@ -927,24 +926,24 @@ mesh_compact(mesh_t* mesh) {
 	// First compact triangle storage and create a map from old triangle index
 	// to new triangle index, cleaning out degenerate triangles
 	bucketarray_t triangle_map;
-	bucketarray_initialize(&triangle_map, sizeof(unsigned int), mesh->triangle.count / 4);
+	bucketarray_initialize(&triangle_map, sizeof(uint), mesh->triangle.count / 4);
 	bucketarray_resize(&triangle_map, mesh->triangle.count);
 
 	bucketarray_t old_triangle_array = mesh->triangle;
 	bucketarray_initialize(&mesh->triangle, sizeof(mesh_triangle_t), old_triangle_array.count / 4);
 
-	for (unsigned int ioldtri = 0; ioldtri < old_triangle_array.count; ++ioldtri) {
-		unsigned int* mapping = bucketarray_get(&triangle_map, ioldtri);
+	for (uint ioldtri = 0; ioldtri < old_triangle_array.count; ++ioldtri) {
+		uint* mapping = bucketarray_get(&triangle_map, ioldtri);
 		mesh_triangle_t* triangle = bucketarray_get(&old_triangle_array, ioldtri);
 		bool valid = !mesh_triangle_is_degenerate(mesh, triangle);
 		if (valid) {
-			*mapping = (unsigned int)mesh->triangle.count;
+			*mapping = (uint)mesh->triangle.count;
 			bucketarray_push(&mesh->triangle, triangle);
 		} else {
 			// When removing a triangle, reduce valence of affected vertex. Do not bother
 			// with updating triangle list yet, will be done when compacting storage
 			*mapping = MESH_INVALID_INDEX;
-			for (unsigned int icorner = 0; icorner < 3; ++icorner) {
+			for (uint icorner = 0; icorner < 3; ++icorner) {
 				if (triangle->vertex[icorner] == MESH_INVALID_INDEX)
 					continue;
 				mesh_vertex_triangle_t* vertex_triangle =
@@ -962,11 +961,11 @@ mesh_compact(mesh_t* mesh) {
 	// Now compact vertex storage and create a map from old vertex index to new
 	// vertex index, cleaning out unused vertex and calculating storage
 	bucketarray_t vertex_map;
-	bucketarray_initialize(&vertex_map, sizeof(unsigned int), mesh->vertex.count / 4);
+	bucketarray_initialize(&vertex_map, sizeof(uint), mesh->vertex.count / 4);
 	bucketarray_resize(&vertex_map, mesh->vertex.count);
 
 	size_t new_vertex_count = 0;
-	for (unsigned int ioldvertex = 0; ioldvertex < mesh->vertex.count; ++ioldvertex) {
+	for (uint ioldvertex = 0; ioldvertex < mesh->vertex.count; ++ioldvertex) {
 		mesh_vertex_triangle_t* vertex_triangle = bucketarray_get(&mesh->topology->vertex_triangle_map, ioldvertex);
 		if (vertex_triangle->valence > 0)
 			++new_vertex_count;
@@ -979,12 +978,12 @@ mesh_compact(mesh_t* mesh) {
 	bucketarray_initialize(&mesh->topology->vertex_triangle_map, sizeof(mesh_vertex_triangle_t), new_vertex_count / 4);
 
 	size_t triangle_map_capacity = 0;
-	for (unsigned int ioldvertex = 0; ioldvertex < old_vertex_array.count; ++ioldvertex) {
-		unsigned int* mapping = bucketarray_get(&vertex_map, ioldvertex);
+	for (uint ioldvertex = 0; ioldvertex < old_vertex_array.count; ++ioldvertex) {
+		uint* mapping = bucketarray_get(&vertex_map, ioldvertex);
 		mesh_vertex_t* vertex = bucketarray_get(&old_vertex_array, ioldvertex);
 		mesh_vertex_triangle_t* vertex_triangle = bucketarray_get(&old_vertex_triangle_map, ioldvertex);
 		if (vertex_triangle->valence > 0) {
-			*mapping = (unsigned int)mesh->vertex.count;
+			*mapping = (uint)mesh->vertex.count;
 			vertex_triangle->capacity = vertex_triangle->valence;
 			vertex_triangle->offset = triangle_map_capacity;
 			vertex_triangle->valence = 0;
@@ -1001,13 +1000,13 @@ mesh_compact(mesh_t* mesh) {
 	          mesh->vertex.count);
 
 	// Update all vertex adjacent links, removing any discarded vertex
-	for (unsigned int ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
+	for (uint ivertex = 0; ivertex < mesh->vertex.count; ++ivertex) {
 		mesh_vertex_t* vertex = bucketarray_get(&mesh->vertex, ivertex);
-		unsigned int first_adjacent = vertex->adjacent;
-		unsigned int adjacent = first_adjacent;
-		unsigned int valid = 0;
+		uint first_adjacent = vertex->adjacent;
+		uint adjacent = first_adjacent;
+		uint valid = 0;
 		do {
-			unsigned int* mapped_adjacent = bucketarray_get(&vertex_map, adjacent);
+			uint* mapped_adjacent = bucketarray_get(&vertex_map, adjacent);
 			if (*mapped_adjacent != MESH_INVALID_INDEX) {
 				adjacent = *mapped_adjacent;
 				valid = 1;
@@ -1024,27 +1023,27 @@ mesh_compact(mesh_t* mesh) {
 	// Update all triangles with new vertex index and new adjacent triangle index
 	// Update all vertex to triangle maps with new triangle index and compact storage,
 	// recreate triangle list for each vertex
-	bucketarray_initialize(&mesh->topology->vertex_triangle_store, sizeof(unsigned int), triangle_map_capacity / 4);
+	bucketarray_initialize(&mesh->topology->vertex_triangle_store, sizeof(uint), triangle_map_capacity / 4);
 	bucketarray_resize(&mesh->topology->vertex_triangle_store, triangle_map_capacity);
 
-	for (unsigned int itri = 0; itri < mesh->triangle.count; ++itri) {
+	for (uint itri = 0; itri < mesh->triangle.count; ++itri) {
 		mesh_triangle_t* triangle = bucketarray_get(&mesh->triangle, itri);
-		for (unsigned int icorner = 0; icorner < 3; ++icorner) {
-			unsigned int* vertex_mapping = bucketarray_get(&vertex_map, triangle->vertex[icorner]);
-			unsigned int ivertex = *vertex_mapping;
+		for (uint icorner = 0; icorner < 3; ++icorner) {
+			uint* vertex_mapping = bucketarray_get(&vertex_map, triangle->vertex[icorner]);
+			uint ivertex = *vertex_mapping;
 			FOUNDATION_ASSERT(ivertex != MESH_INVALID_INDEX);
 			triangle->vertex[icorner] = ivertex;
 
 			mesh_vertex_triangle_t* vertex_triangle = bucketarray_get(&mesh->topology->vertex_triangle_map, ivertex);
-			unsigned int* vertex_triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store,
-			                                                      vertex_triangle->offset + vertex_triangle->valence);
+			uint* vertex_triangle_index = bucketarray_get(&mesh->topology->vertex_triangle_store,
+			                                              vertex_triangle->offset + vertex_triangle->valence);
 			FOUNDATION_ASSERT(vertex_triangle->valence < vertex_triangle->capacity);
 			*vertex_triangle_index = itri;
 			++vertex_triangle->valence;
 
-			unsigned int iedge = icorner;
+			uint iedge = icorner;
 			if (triangle->adjacent[iedge] != MESH_INVALID_INDEX) {
-				unsigned int* triangle_mapping = bucketarray_get(&triangle_map, triangle->adjacent[iedge]);
+				uint* triangle_mapping = bucketarray_get(&triangle_map, triangle->adjacent[iedge]);
 				triangle->adjacent[iedge] = *triangle_mapping;
 			}
 		}
@@ -1054,13 +1053,13 @@ mesh_compact(mesh_t* mesh) {
 
 	// Compact coordinate array and update coordinate to vertex map
 	size_t new_coordinate_count = 0;
-	for (unsigned int icoord = 0; icoord < mesh->partition->coordinate_to_vertex.count; ++icoord) {
-		unsigned int* coordinate_vertex = bucketarray_get(&mesh->partition->coordinate_to_vertex, icoord);
-		unsigned int ivertex = *coordinate_vertex;
+	for (uint icoord = 0; icoord < mesh->partition->coordinate_to_vertex.count; ++icoord) {
+		uint* coordinate_vertex = bucketarray_get(&mesh->partition->coordinate_to_vertex, icoord);
+		uint ivertex = *coordinate_vertex;
 		if (ivertex != MESH_INVALID_INDEX) {
 			bool mapped = false;
 			do {
-				unsigned int* mapped_vertex = bucketarray_get(&vertex_map, ivertex);
+				uint* mapped_vertex = bucketarray_get(&vertex_map, ivertex);
 				if (*mapped_vertex != MESH_INVALID_INDEX) {
 					ivertex = *mapped_vertex;
 					mapped = true;
@@ -1083,14 +1082,14 @@ mesh_compact(mesh_t* mesh) {
 	bucketarray_initialize(&mesh->coordinate, sizeof(mesh_coordinate_t), new_coordinate_count / 4);
 
 	bucketarray_t old_coordinate_to_vertex_array = mesh->partition->coordinate_to_vertex;
-	bucketarray_initialize(&mesh->partition->coordinate_to_vertex, sizeof(unsigned int), new_coordinate_count / 4);
+	bucketarray_initialize(&mesh->partition->coordinate_to_vertex, sizeof(uint), new_coordinate_count / 4);
 
-	for (unsigned int icoord = 0; icoord < old_coordinate_to_vertex_array.count; ++icoord) {
-		unsigned int* coordinate_vertex = bucketarray_get(&old_coordinate_to_vertex_array, icoord);
+	for (uint icoord = 0; icoord < old_coordinate_to_vertex_array.count; ++icoord) {
+		uint* coordinate_vertex = bucketarray_get(&old_coordinate_to_vertex_array, icoord);
 		if (*coordinate_vertex != MESH_INVALID_INDEX) {
-			unsigned int icoordinate = (unsigned int)mesh->coordinate.count;
-			unsigned int ifirstvertex = *coordinate_vertex;
-			unsigned int ivertex = ifirstvertex;
+			uint icoordinate = (uint)mesh->coordinate.count;
+			uint ifirstvertex = *coordinate_vertex;
+			uint ivertex = ifirstvertex;
 
 			bucketarray_push(&mesh->coordinate, bucketarray_get(&old_coordinate_array, icoord));
 			bucketarray_push(&mesh->partition->coordinate_to_vertex, coordinate_vertex);
@@ -1115,7 +1114,7 @@ mesh_compact(mesh_t* mesh) {
 	if (mesh->normal.count) {
 	}
 
-	for (unsigned int ilayer = 0; ilayer < 2; ++ilayer) {
+	for (uint ilayer = 0; ilayer < 2; ++ilayer) {
 		if (mesh->uv[ilayer].count) {
 		}
 	}
@@ -1227,7 +1226,7 @@ mesh_undump(stream_t* stream) {
 	if (stream_read_bool(stream)) {
 		mesh->partition = memory_allocate(HASH_MESH, sizeof(mesh_partition_t), 0, MEMORY_PERSISTENT);
 		bucketarray_initialize(&mesh->partition->element, sizeof(mesh_partition_element_t), 0);
-		bucketarray_initialize(&mesh->partition->coordinate_to_vertex, sizeof(unsigned int), 0);
+		bucketarray_initialize(&mesh->partition->coordinate_to_vertex, sizeof(uint), 0);
 
 		stream_read(stream, &mesh->partition->root, sizeof(mesh_partition_element_t));
 		mesh_undump_bucketarray(stream, &mesh->partition->element);
@@ -1238,7 +1237,7 @@ mesh_undump(stream_t* stream) {
 		mesh->topology =
 		    memory_allocate(HASH_MESH, sizeof(mesh_topology_t), 0, MEMORY_PERSISTENT | MEMORY_ZERO_INITIALIZED);
 		bucketarray_initialize(&mesh->topology->vertex_triangle_map, sizeof(mesh_vertex_triangle_t), 0);
-		bucketarray_initialize(&mesh->topology->vertex_triangle_store, sizeof(unsigned int), 0);
+		bucketarray_initialize(&mesh->topology->vertex_triangle_store, sizeof(uint), 0);
 
 		mesh_undump_bucketarray(stream, &mesh->topology->vertex_triangle_map);
 		mesh_undump_bucketarray(stream, &mesh->topology->vertex_triangle_store);

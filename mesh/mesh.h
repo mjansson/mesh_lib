@@ -102,7 +102,7 @@ mesh_merge_coordinate(mesh_t* mesh, real merge_coordinate_distance);
 
 // Merge vertices with attributes that has same value. For best result
 // merge coordinates first using mesh_merge_coordinate to maximize
-// vertex mergine
+// vertex merging
 MESH_API void
 mesh_merge_vertex(mesh_t* mesh);
 
