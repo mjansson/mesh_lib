@@ -646,7 +646,7 @@ mesh_topology(mesh_t* mesh) {
 						uint iotherstartvertex = other_triangle->vertex[iotheredge];
 						mesh_vertex_t* other_start_vertex = bucketarray_get(&mesh->vertex, iotherstartvertex);
 						if (other_start_vertex->coordinate != inextcoordinate)
-							continue;
+							break;
 
 						if (other_triangle->adjacent[iotheredge] != MESH_INVALID_INDEX) {
 							uint ithirdtri = other_triangle->adjacent[iotheredge];
