@@ -119,9 +119,11 @@ struct mesh_vertex_t {
 struct mesh_triangle_t {
 	//! Index of the three corner vertex
 	unsigned int vertex[3];
-	//! Index of the three adjacent triangles along the corresponding edge from vertex n -> n+1
+	//! Index of the three adjacent triangles along the corresponding edge from corner n -> n+1
 	// An adjacent triangle shares both vertex coordinates and is winded the opposite direction along the edge,
-	// such that the adjacent triangle edge goes from vertex n+1 -> n
+	// such that the adjacent triangle edge goes from this triangle corner n+1 -> n. Topological
+	// adjacency is based on coordinates, other vertex attributes such as normal or uv might differ
+	// between corners of the adjacent triangles ("hard" edge for normals, seam for textures etc).
 	unsigned int adjacent[3];
 	//! Index of original face in the case of higher order polygon triangulation
 	unsigned int face;
